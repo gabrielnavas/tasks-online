@@ -8,6 +8,7 @@ import (
 	"context"
 	"log"
 	"os"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 
@@ -48,8 +49,9 @@ func main() {
 		DB_MYSQL_PORT          = os.Getenv("DB_MYSQL_PORT")
 		DB_MYSQL_DATABASE_NAME = os.Getenv("DB_MYSQL_DATABASE_NAME")
 
-		DB_REDIS_ADDR     = os.Getenv("DB_REDIS_ADDR")
-		DB_REDIS_PASSWORD = os.Getenv("DB_REDIS_PASSWORD")
+		DB_REDIS_ADDR           = os.Getenv("DB_REDIS_ADDR")
+		DB_REDIS_PASSWORD       = os.Getenv("DB_REDIS_PASSWORD")
+		DB_REDIS_RESET_ON_START = os.Getenv("DB_REDIS_RESET_ON_START")
 	)
 
 	// cache
@@ -59,7 +61,9 @@ func main() {
 		DB:       0,                 // use default DB
 	})
 	// reseta o cache
-	rdb.FlushAll(ctx)
+	if v, err := strconv.ParseBool(DB_REDIS_RESET_ON_START); err == nil && v == true {
+		rdb.FlushAll(ctx)
+	}
 
 	// databases
 	dbMysql := database.OpenMysqlConnection(

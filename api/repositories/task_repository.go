@@ -3,6 +3,7 @@ package repositories
 import (
 	"api/dtos"
 	"api/models"
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -19,14 +20,14 @@ func NewTaskRepository(db *sql.DB) *TaskRepository {
 	return &TaskRepository{db}
 }
 
-func (tr *TaskRepository) CreateTask(description string) (*models.Task, error) {
+func (tr *TaskRepository) CreateTask(ctx context.Context, description string) (*models.Task, error) {
 	var t models.Task
 	t.ID = uuid.New()
 	t.Description = description
 	t.Done = false
 	t.CreatedAt = time.Now().UTC()
 
-	statement, err := tr.db.Prepare(`
+	statement, err := tr.db.PrepareContext(ctx, `
 		INSERT INTO tasks (id, description, done, created_at)
 		VALUES (?, ?, ?, ?)
 	`)
@@ -35,7 +36,7 @@ func (tr *TaskRepository) CreateTask(description string) (*models.Task, error) {
 	}
 	defer statement.Close()
 
-	_, err = statement.Exec(t.ID, t.Description, t.Done, t.CreatedAt)
+	_, err = statement.ExecContext(ctx, t.ID, t.Description, t.Done, t.CreatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -79,8 +80,8 @@ func (tr *TaskRepository) DeleteTask(taskId uuid.UUID) error {
 	return nil
 }
 
-func (tr *TaskRepository) FindTaskById(taskId uuid.UUID) (*models.Task, error) {
-	statement, err := tr.db.Prepare(`
+func (tr *TaskRepository) FindTaskById(ctx context.Context, taskId uuid.UUID) (*models.Task, error) {
+	statement, err := tr.db.PrepareContext(ctx, `
 		SELECT id, description, done
 		FROM tasks
 		WHERE id = ?
@@ -90,7 +91,7 @@ func (tr *TaskRepository) FindTaskById(taskId uuid.UUID) (*models.Task, error) {
 	}
 	defer statement.Close()
 
-	row := statement.QueryRow(taskId)
+	row := statement.QueryRowContext(ctx, taskId)
 
 	var t models.Task
 	err = row.Scan(&t.ID, &t.Description, &t.Done)

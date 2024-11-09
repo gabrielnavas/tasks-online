@@ -4,6 +4,8 @@ import (
 	"api/controllers"
 	"api/database"
 	"api/repositories"
+	"api/services"
+	"context"
 	"log"
 	"os"
 
@@ -12,6 +14,8 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 
 	"github.com/joho/godotenv"
+
+	"github.com/redis/go-redis/v9"
 )
 
 func CORSMiddleware() gin.HandlerFunc {
@@ -28,6 +32,8 @@ func CORSMiddleware() gin.HandlerFunc {
 	}
 }
 
+var ctx = context.Background()
+
 func main() {
 
 	// envs
@@ -35,14 +41,25 @@ func main() {
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
-
 	var (
 		DB_MYSQL_USERNAME      = os.Getenv("DB_MYSQL_USERNAME")
 		DB_MYSQL_PASSWORD      = os.Getenv("DB_MYSQL_PASSWORD")
 		DB_MYSQL_HOST          = os.Getenv("DB_MYSQL_HOST")
 		DB_MYSQL_PORT          = os.Getenv("DB_MYSQL_PORT")
 		DB_MYSQL_DATABASE_NAME = os.Getenv("DB_MYSQL_DATABASE_NAME")
+
+		DB_REDIS_ADDR     = os.Getenv("DB_REDIS_ADDR")
+		DB_REDIS_PASSWORD = os.Getenv("DB_REDIS_PASSWORD")
 	)
+
+	// cache
+	rdb := redis.NewClient(&redis.Options{
+		Addr:     DB_REDIS_ADDR,     //"localhost:6379",
+		Password: DB_REDIS_PASSWORD, //"secretpass123", // set password
+		DB:       0,                 // use default DB
+	})
+	// reseta o cache
+	rdb.FlushAll(ctx)
 
 	// databases
 	dbMysql := database.OpenMysqlConnection(
@@ -55,7 +72,8 @@ func main() {
 
 	// controllers, services, repositories
 	tr := repositories.NewTaskRepository(dbMysql)
-	tc := controllers.NewTaskController(tr)
+	ts := services.NewTaskService(rdb, tr)
+	tc := controllers.NewTaskController(tr, ts)
 
 	// gin
 	router := gin.Default()

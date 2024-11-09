@@ -4,6 +4,7 @@ import (
 	"api/dtos"
 	"api/models"
 	"api/repositories"
+	"api/services"
 	"errors"
 	"net/http"
 	"strconv"
@@ -14,10 +15,14 @@ import (
 
 type TaskController struct {
 	taskRepository *repositories.TaskRepository
+	taskService    *services.TaskService
 }
 
-func NewTaskController(tr *repositories.TaskRepository) *TaskController {
-	return &TaskController{tr}
+func NewTaskController(
+	tr *repositories.TaskRepository,
+	ts *services.TaskService,
+) *TaskController {
+	return &TaskController{tr, ts}
 }
 
 func (tc *TaskController) CreateTask(c *gin.Context) {
@@ -32,7 +37,7 @@ func (tc *TaskController) CreateTask(c *gin.Context) {
 		return
 	}
 
-	if task, err = tc.taskRepository.CreateTask(dto.Description); err != nil {
+	if task, err = tc.taskService.CreateTask(c, dto.Description); err != nil {
 		c.Status(http.StatusBadRequest)
 		return
 	}
@@ -122,7 +127,7 @@ func (tc *TaskController) FindTaskById(c *gin.Context) {
 		taskUuid, err = uuid.Parse(taskId)
 	}
 
-	task, err := tc.taskRepository.FindTaskById(taskUuid)
+	task, err := tc.taskService.FindTaskById(c, taskUuid)
 	if err != nil {
 		if errors.Is(err, repositories.ErrResourceNotFound) {
 			c.Status(http.StatusNotFound)
@@ -154,7 +159,7 @@ func (tc *TaskController) DeleteTask(c *gin.Context) {
 		}
 	}
 
-	_, err = tc.taskRepository.FindTaskById(taskUuid)
+	_, err = tc.taskRepository.FindTaskById(c, taskUuid)
 	if err != nil {
 		if errors.Is(err, repositories.ErrResourceNotFound) {
 			c.Status(http.StatusNotFound)

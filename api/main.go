@@ -56,9 +56,9 @@ func main() {
 
 	// cache
 	rdb := redis.NewClient(&redis.Options{
-		Addr:     DB_REDIS_ADDR,     //"localhost:6379",
-		Password: DB_REDIS_PASSWORD, //"secretpass123", // set password
-		DB:       0,                 // use default DB
+		Addr:     DB_REDIS_ADDR,
+		Password: DB_REDIS_PASSWORD,
+		DB:       0,
 	})
 	// reseta o cache
 	if v, err := strconv.ParseBool(DB_REDIS_RESET_ON_START); err == nil && v == true {

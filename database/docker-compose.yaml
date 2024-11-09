@@ -1,0 +1,9 @@
+services:
+  db:
+    image: mysql:8.4
+    container_name: todo-db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: robin
+    ports:
+      - 3306:3306

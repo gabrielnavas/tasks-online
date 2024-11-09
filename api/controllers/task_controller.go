@@ -105,7 +105,7 @@ func (tc *TaskController) FindTasks(c *gin.Context) {
 		c.Status(http.StatusBadRequest)
 		return
 	}
-	tasks, err := tc.taskRepository.FindTasks(offset, size, query)
+	tasks, err := tc.taskService.FindTasks(c, offset, size, query)
 	if err != nil {
 		c.Status(http.StatusBadRequest)
 		return
@@ -159,7 +159,7 @@ func (tc *TaskController) DeleteTask(c *gin.Context) {
 		}
 	}
 
-	_, err = tc.taskRepository.FindTaskById(c, taskUuid)
+	_, err = tc.taskService.FindTaskById(c, taskUuid)
 	if err != nil {
 		if errors.Is(err, repositories.ErrResourceNotFound) {
 			c.Status(http.StatusNotFound)
@@ -169,7 +169,7 @@ func (tc *TaskController) DeleteTask(c *gin.Context) {
 		return
 	}
 
-	err = tc.taskRepository.DeleteTask(taskUuid)
+	err = tc.taskService.DeleteTask(c, taskUuid)
 	if err != nil {
 		c.Status(http.StatusBadRequest)
 		return

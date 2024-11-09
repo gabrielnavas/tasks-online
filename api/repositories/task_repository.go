@@ -64,8 +64,8 @@ func (tr *TaskRepository) UpdateTask(taskId uuid.UUID, dto dtos.UpdateTaskDto) e
 	return nil
 }
 
-func (tr *TaskRepository) DeleteTask(taskId uuid.UUID) error {
-	statement, err := tr.db.Prepare(`
+func (tr *TaskRepository) DeleteTask(ctx context.Context, taskId uuid.UUID) error {
+	statement, err := tr.db.PrepareContext(ctx, `
 		DELETE FROM tasks
 		WHERE id = ?
 	`)
@@ -73,7 +73,7 @@ func (tr *TaskRepository) DeleteTask(taskId uuid.UUID) error {
 		return err
 	}
 	defer statement.Close()
-	_, err = statement.Exec(taskId)
+	_, err = statement.ExecContext(ctx, taskId)
 	if err != nil {
 		return err
 	}

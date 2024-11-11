@@ -40,7 +40,7 @@ func main() {
 	// envs
 	err := godotenv.Load()
 	if err != nil {
-		log.Fatal("Error loading .env file")
+		log.Fatal(".env not found. Copy from .env.example to .env with env variables")
 	}
 	var (
 		DB_MYSQL_USERNAME      = os.Getenv("DB_MYSQL_USERNAME")

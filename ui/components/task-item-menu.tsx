@@ -9,11 +9,15 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { TaskDeleteConfirm } from "./task-delete-confirmation"
+
+import * as taskServices from '@/services/tasks-services'
+import { useState } from "react"
 
 type Props = {
   task: {
     id: string
-    content: string
+    description: string
     done: boolean
     createdAt: Date
     updatedAt?: Date | undefined
@@ -21,39 +25,62 @@ type Props = {
 }
 
 export const TaskItemMenu = ({ task }: Props) => {
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="icon">
-          <Menu />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={() => { }}>
-          <Trash color='red' />
-          Remover
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => { }}>
-          <RefreshCw color='yellow' />
-          Atualizar
-        </DropdownMenuItem>
+  const [deleteTaskDialogOpen, setDeleteTaskOpen] = useState(false)
 
-        <DropdownMenuItem onClick={() => { }}>
-          {
-            task.done ? (
-              <span className="flex gap-2">
-                <Undo color='red' />
-                Retornar
-              </span>
-            ) : (
-              <span className="flex gap-2">
-                <Check color='green' />
-                Finalizar
-              </span>
-            )
-          }
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+  const callbackDeleteConfirm = () => {
+    taskServices.deleteTask(task.id)
+      .then(() => {
+        console.log('Tarefa deletada!')
+      })
+      .catch(e => {
+        alert(e)
+      })
+  }
+
+  return (
+    <>
+      
+      {/* modal para confirmação para deletar a task */}
+      <TaskDeleteConfirm
+        open={deleteTaskDialogOpen}
+        setOpen={setDeleteTaskOpen}
+        callbackConfirm={callbackDeleteConfirm}
+      />
+
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" size="icon">
+            <Menu />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem onClick={() => setDeleteTaskOpen(true)}>
+            <Trash color='red' />
+            Remover
+
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => { }}>
+            <RefreshCw color='yellow' />
+            Atualizar
+          </DropdownMenuItem>
+
+          <DropdownMenuItem onClick={() => { }}>
+            {
+              task.done ? (
+                <span className="flex gap-2">
+                  <Undo color='red' />
+                  Retornar
+                </span>
+              ) : (
+                <span className="flex gap-2">
+                  <Check color='green' />
+                  Finalizar
+                </span>
+              )
+            }
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </>
   )
 }

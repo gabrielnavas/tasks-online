@@ -1,14 +1,13 @@
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Separator } from "@/components/separator"
 import { distanceToNow } from "@/lib/date"
-import { formatDistanceToNow } from "date-fns"
-import { Check, Menu, RefreshCw, ShieldCheck, X } from "lucide-react"
+import { Check, RefreshCw, ShieldCheck, X } from "lucide-react"
 import { TaskItemMenu } from "./task-item-menu"
 
 type Props = {
   task: {
     id: string
-    content: string
+    description: string
     done: boolean
     createdAt: Date
     updatedAt?: Date | undefined
@@ -17,7 +16,7 @@ type Props = {
 
 export const TaskItem = ({ task }: Props) => {
   return (
-    <Card className="min-h-[450px] w-[500px] p-4">
+    <Card className="h-[100%] w-[500px] p-4">
       <CardHeader className="flex">
         <div className="flex items-center justify-between">
           <div className={`flex flex-col gap-1 ${task.done && 'text-gray-400'}`}>
@@ -44,7 +43,6 @@ export const TaskItem = ({ task }: Props) => {
               <ShieldCheck size={12} />
               Criado {distanceToNow(task.createdAt)}
             </span>
-
           </div>
           <div>
             <TaskItemMenu task={task} />
@@ -54,7 +52,7 @@ export const TaskItem = ({ task }: Props) => {
       </CardHeader>
       <CardContent
         className={`break-words ${task.done && 'line-through text-gray-400'}`}>
-        {task.content}
+        {task.description}
       </CardContent>
     </Card>
   )

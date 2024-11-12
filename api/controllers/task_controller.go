@@ -76,18 +76,18 @@ func (tc *TaskController) UpdateTask(c *gin.Context) {
 
 func (tc *TaskController) FindTasks(c *gin.Context) {
 	var (
-		err    error
-		offset int64 = 0
-		size   int64 = 10
-		query  string
+		err   error
+		page  int64 = 1
+		size  int64 = 10
+		query string
 	)
 
-	offsetQ := c.Query("offset")
+	pageQ := c.Query("page")
 	sizeQ := c.Query("size")
 	query = c.Query("query")
 
-	if offsetQ != "" {
-		offset, err = strconv.ParseInt(offsetQ, 10, 64)
+	if pageQ != "" {
+		page, err = strconv.ParseInt(pageQ, 10, 64)
 		if err != nil {
 			c.Status(http.StatusBadRequest)
 			return
@@ -105,7 +105,7 @@ func (tc *TaskController) FindTasks(c *gin.Context) {
 		c.Status(http.StatusBadRequest)
 		return
 	}
-	tasks, err := tc.taskService.FindTasks(c, offset, size, query)
+	tasks, err := tc.taskService.FindTasks(c, page, size, query)
 	if err != nil {
 		c.Status(http.StatusBadRequest)
 		return

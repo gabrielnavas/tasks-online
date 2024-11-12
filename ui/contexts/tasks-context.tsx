@@ -16,6 +16,7 @@ export type TasksContextData = {
   isLoading: boolean
   tasks: Task[]
   createTask: (description: string) => Promise<Task>
+  deleteTask: (taslId: string) => Promise<void>
 }
 
 export const TasksContext = React.createContext<TasksContextData | null>(null)
@@ -57,7 +58,19 @@ export const TasksProvider = ({ children }: Props) => {
       setTasks(prev => [task, ...prev])
       return task
     } catch (err) {
-      console.log(err);
+      throw new HttpInternalServerError()
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+
+  const deleteTask = async (taskId: string): Promise<void> => {
+    try {
+      setIsLoading(true)
+      await taskServices.deleteTask(taskId)
+      setTasks(prev => prev.filter(task => task.id !== taskId))
+    } catch (err) {
       throw new HttpInternalServerError()
     } finally {
       setIsLoading(false)
@@ -68,7 +81,8 @@ export const TasksProvider = ({ children }: Props) => {
     <TasksContext.Provider value={{
       isLoading,
       tasks,
-      createTask
+      createTask,
+      deleteTask
     }}>
       {children}
     </TasksContext.Provider>

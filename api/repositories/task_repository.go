@@ -107,7 +107,8 @@ func (tr *TaskRepository) FindTaskById(ctx context.Context, taskId uuid.UUID) (*
 	return &t, nil
 }
 
-func (tr *TaskRepository) FindTasks(offset, size int64, description string) ([]*models.Task, error) {
+func (tr *TaskRepository) FindTasks(page, size int64, description string) ([]*models.Task, error) {
+	page = (page - 1) * size
 	tasks := []*models.Task{}
 	statement, err := tr.db.Prepare(`
 		SELECT id, description, done, created_at, updated_at
@@ -124,7 +125,7 @@ func (tr *TaskRepository) FindTasks(offset, size int64, description string) ([]*
 	defer statement.Close()
 
 	searchTerm := fmt.Sprintf("%%%s%%", description)
-	rows, err := statement.Query(description, searchTerm, size, offset)
+	rows, err := statement.Query(description, searchTerm, size, page)
 	if err != nil {
 		return nil, err
 	}

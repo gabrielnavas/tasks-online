@@ -14,15 +14,16 @@ import (
 )
 
 type TaskService struct {
-	rdb *redis.Client
-	tr  *repositories.TaskRepository
+	rdb           *redis.Client
+	tr            *repositories.TaskRepository
+	durationCache time.Duration
 }
 
 func NewTaskService(
 	rdb *redis.Client,
 	tr *repositories.TaskRepository,
 ) *TaskService {
-	return &TaskService{rdb, tr}
+	return &TaskService{rdb, tr, time.Duration(time.Second * 10)}
 }
 
 func (ts *TaskService) CreateTask(ctx context.Context, description string) (*models.Task, error) {
@@ -35,7 +36,20 @@ func (ts *TaskService) CreateTask(ctx context.Context, description string) (*mod
 	if err != nil {
 		return nil, ErrCache
 	}
-	err = ts.rdb.Set(ctx, task.ID.String(), string(b), 0).Err()
+
+	// TODO: melhorar isso
+	// se tiver usuários, remove só do usuário pelo id dele
+	// pois terá uma task nova
+	// Limpa todos os bancos de dados do Redis
+	err = ts.rdb.FlushAll(ctx).Err()
+	if err != nil {
+		fmt.Println("Erro ao limpar o cache Redis:", err)
+	} else {
+		fmt.Println("Cache Redis limpo com sucesso!")
+	}
+
+	// add cache by task id
+	err = ts.rdb.Set(ctx, task.ID.String(), string(b), ts.durationCache).Err()
 	if err != nil {
 		return nil, ErrCache
 	}
@@ -54,11 +68,17 @@ func (ts *TaskService) DeleteTask(ctx context.Context, taskId uuid.UUID) error {
 		return ErrRepository
 	}
 
-	_, err = ts.rdb.Del(ctx, taskId.String()).Result()
+	// TODO: melhorar isso
+	// se tiver usuários, remove só do usuário pelo id dele
+	// pois terá uma task nova
+	// Limpa todos os bancos de dados do Redis
+	err = ts.rdb.FlushAll(ctx).Err()
 	if err != nil {
-		// log error
-		return ErrCache
+		fmt.Println("Erro ao limpar o cache Redis:", err)
+	} else {
+		fmt.Println("Cache Redis limpo com sucesso!")
 	}
+
 	return nil
 }
 
@@ -87,7 +107,7 @@ func (ts *TaskService) FindTaskById(ctx context.Context, taskId uuid.UUID) (*mod
 	if err != nil {
 		return nil, ErrCache
 	}
-	err = ts.rdb.Set(ctx, task.ID.String(), string(b), 0).Err()
+	err = ts.rdb.Set(ctx, task.ID.String(), string(b), ts.durationCache).Err()
 	if err != nil {
 		return nil, ErrCache
 	}
@@ -96,8 +116,9 @@ func (ts *TaskService) FindTaskById(ctx context.Context, taskId uuid.UUID) (*mod
 
 }
 
-func (ts *TaskService) FindTasks(ctx context.Context, offset, size int64, query string) ([]*models.Task, error) {
-	var keyCache = fmt.Sprintf("tasks:%d:%d:%s", offset, size, query)
+func (ts *TaskService) FindTasks(ctx context.Context, page, size int64, query string) ([]*models.Task, error) {
+	// procura no cache
+	var keyCache = fmt.Sprintf("tasks:%d:%d:%s", page, size, query)
 	tasksJson, err := ts.rdb.Get(ctx, keyCache).Result()
 	if err != nil && !errors.Is(err, redis.Nil) {
 		// manda pro logger
@@ -109,17 +130,24 @@ func (ts *TaskService) FindTasks(ctx context.Context, offset, size int64, query 
 		return tasks, nil
 	}
 
-	tasks, err := ts.tr.FindTasks(offset, size, query)
+	// procura no repository
+	tasks, err := ts.tr.FindTasks(page, size, query)
 	if err != nil {
 		// manda pro logger
 		return nil, ErrRepository
 	}
 
+	// grava no cache
 	tasksBytes, err := json.Marshal(tasks)
-	_, err = ts.rdb.Set(ctx, keyCache, string(tasksBytes), time.Duration(time.Second*10)).Result()
+	if err != nil {
+		// manda pro logger
+		return nil, ErrRepository
+	}
+	_, err = ts.rdb.Set(ctx, keyCache, string(tasksBytes), ts.durationCache).Result()
 	if err != nil {
 		// manda pro logger
 		return nil, ErrCache
 	}
+
 	return tasks, nil
 }

@@ -1,6 +1,12 @@
 "use client"
 
-import { Check, Menu, RefreshCw, RotateCw, Trash, Undo, X } from "lucide-react"
+import {
+  Check,
+  Menu,
+  RefreshCw,
+  Trash,
+  Undo
+} from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -12,7 +18,9 @@ import {
 import { TaskDeleteConfirm } from "./task-delete-confirmation"
 
 import * as taskServices from '@/services/tasks-services'
-import { useState } from "react"
+import { useContext, useState } from "react"
+import { TasksContext, TasksContextData } from "@/contexts/tasks-context"
+import { useToast } from "@/hooks/use-toast"
 
 type Props = {
   task: {
@@ -25,21 +33,29 @@ type Props = {
 }
 
 export const TaskItemMenu = ({ task }: Props) => {
+  const { isLoading, deleteTask } = useContext(TasksContext) as TasksContextData
   const [deleteTaskDialogOpen, setDeleteTaskOpen] = useState(false)
 
+  const { toast } = useToast()
+
   const callbackDeleteConfirm = () => {
-    taskServices.deleteTask(task.id)
+    deleteTask(task.id)
       .then(() => {
-        console.log('Tarefa deletada!')
+        toast({
+          title: "Tarefa removida",
+        })
       })
-      .catch(e => {
-        alert(e)
+      .catch((e: Error) => {
+        toast({
+          title: e.message,
+          variant: 'destructive'
+        })
       })
   }
 
   return (
     <>
-      
+
       {/* modal para confirmação para deletar a task */}
       <TaskDeleteConfirm
         open={deleteTaskDialogOpen}
@@ -54,10 +70,11 @@ export const TaskItemMenu = ({ task }: Props) => {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={() => setDeleteTaskOpen(true)}>
+          <DropdownMenuItem
+            hidden={isLoading}
+            onClick={() => setDeleteTaskOpen(true)}>
             <Trash color='red' />
             Remover
-
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => { }}>
             <RefreshCw color='yellow' />
